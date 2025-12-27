@@ -24,7 +24,7 @@ return {
       'WhoIsSethDaniel/mason-tool-installer.nvim',
 
       -- Useful status updates for LSP.
-      { 'j-hui/fidget.nvim', opts = {} },
+      { 'j-hui/fidget.nvim',    opts = {} },
 
       -- Allows extra capabilities provided by blink.cmp
       'saghen/blink.cmp',
@@ -64,7 +64,13 @@ return {
         callback = function(event)
           -- NOTE: Remember that Lua is a real programming language, and as such it is possible
           -- to define small helper and utility functions so you don't have to repeat yourself.
-          --
+
+          -- Enable semantic tokens if supported
+          local client = vim.lsp.get_client_by_id(event.data.client_id)
+          if client and client.server_capabilities.semanticTokensProvider then
+            vim.lsp.semantic_tokens.start(event.buf, client.id)
+          end
+
           -- In this case, we create a function that lets us more easily define mappings specific
           -- for LSP related items. It sets the mode, buffer and description for us each time.
           local map = function(keys, func, desc, mode)
@@ -236,13 +242,20 @@ return {
           },
         },
 
-        pyright = {
+        pylsp = {
           settings = {
-            python = {
-              analysis = {
-                typeCheckingMode = 'basic', -- or "off", "strict"
-                autoSearchPaths = true,
-                useLibraryCodeForTypes = true,
+            pylsp = {
+              plugins = {
+                -- Disable plugins that conflict with ruff
+                pyflakes = { enabled = false },
+                pycodestyle = { enabled = false },
+                autopep8 = { enabled = false },
+                yapf = { enabled = false },
+                pylsp_black = { enabled = false },
+                pylsp_isort = { enabled = false },
+                -- Optional: enable these if you want them
+                mccabe = { enabled = false },     -- complexity checking
+                pylsp_mypy = { enabled = false }, -- type checking (recommended!)
               },
             },
           },
@@ -264,7 +277,10 @@ return {
       -- for you, so that they are available from within Neovim.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
-        'stylua', -- Used to format Lua code
+        'stylua',   -- Used to format Lua code
+        'ruff',     -- Python linter/formatter
+        'prettier', -- JS/TS/CSS/etc formatter
+        'shfmt',    -- SHell script formatter
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
